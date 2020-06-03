@@ -8,6 +8,11 @@
 
 import UIKit
 
+@objc public protocol EPSignatureViewDelegate {
+    @objc optional func epSignature(_: EPSignatureView, didCancel error: NSError?)
+    @objc optional func epSignature(_: EPSignatureView, didSign signatureImage: UIImage, boundingRect: CGRect)
+}
+
 open class EPSignatureView: UIView {
 
     // MARK: - Private Vars
@@ -23,6 +28,7 @@ open class EPSignatureView: UIView {
 	    didSet { bezierPath.lineWidth = strokeWidth }
     }
     open var isSigned: Bool = false
+    open weak var delegate: EPSignatureViewDelegate?
     
     // MARK: - Initializers
     
@@ -94,6 +100,9 @@ open class EPSignatureView: UIView {
     
     override open func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         bezierCounter = 0
+        if let signature = self.getSignatureAsImage(), let delegate = delegate {
+            delegate.epSignature?(self, didSign: signature, boundingRect: self.getSignatureBoundsInCanvas())
+        }
     }
     
     func touchPoint(_ touches: Set<UITouch>) -> CGPoint? {
@@ -111,6 +120,9 @@ open class EPSignatureView: UIView {
         isSigned = false
         bezierPath.removeAllPoints()
         setNeedsDisplay()
+        if let delegate = delegate {
+            delegate.epSignature?(self, didCancel: nil)
+        }
     }
     
     /** scales and repositions the path
